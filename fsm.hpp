@@ -10,8 +10,8 @@
 #include <cstdint>
 #include <cstring>
 
-#define STATECOUNT 10                                   ///< 最大狀態數量
-#define STATE_CONNECTCOUNT STATECOUNT *(STATECOUNT - 1) ///< 最大轉移規則數量（完全圖）
+#define STATECOUNT 10                                   // 最大狀態數量
+#define STATE_CONNECTCOUNT STATECOUNT *(STATECOUNT - 1) // 最大轉移規則數量
 
 class FSM
 {
@@ -19,27 +19,27 @@ private:
     /// @brief 狀態描述
     typedef struct
     {
-        uint8_t     id;         ///< 狀態 ID（即 stateForm 陣列索引）
-        const char *name;       ///< 狀態名稱（僅用於調試顯示，不參與邏輯比對）
-        void      (*handle)();  ///< 狀態事件回調：處於此狀態時每幀執行（可為 nullptr）
+        uint8_t id;       // 狀態 ID
+        const char *name; // 狀態名稱
+        void (*handle)(); // 狀態事件回調：處於此狀態時每幀執行（可為 nullptr）
     } stateData_t;
 
     /// @brief 轉移規則
     typedef struct
     {
-        uint8_t fromID;         ///< 來源狀態 ID
-        uint8_t toID;           ///< 目標狀態 ID
-        bool   (*reason)();     ///< 守衛函數：返回 true 時觸發轉移
+        uint8_t fromID;   // 來源狀態 ID
+        uint8_t toID;     // 目標狀態 ID
+        bool (*reason)(); // 原因函數：返回 true 時觸發轉移1
     } stateTrans_t;
 
     // ──────────────────────────────────────────────
-    // 內部資料（全靜態分配）
+    // 內部資料
     // ──────────────────────────────────────────────
 
-    stateTrans_t stateTransForm[STATE_CONNECTCOUNT];    ///< 轉移規則表
-    stateData_t  stateForm[STATECOUNT] = {0};           ///< 狀態表（{0} 將所有 name/handle 初始為 nullptr）
-    uint8_t      currentID = 0xff;                      ///< 當前狀態 ID（0xff = 未啟動）
-    uint16_t     transCount = 0;                        ///< 已註冊的轉移規則數量
+    stateTrans_t stateTransForm[STATE_CONNECTCOUNT]; // 轉移規則表
+    stateData_t stateForm[STATECOUNT] = {0};         // 狀態表
+    uint8_t currentID = 0xff;                        // 當前狀態 ID（0xff = 未啟動）
+    uint16_t transCount = 0;                         // 已註冊的轉移規則數量
 
 public:
     // ──────────────────────────────────────────────
@@ -49,10 +49,10 @@ public:
     /**
      * @brief   註冊一個新狀態
      *
-     * @param   name  狀態名稱（建議傳字串字面量，如 "IDLE"）
+     * @param   name  狀態名稱
      * @param   func  狀態事件回調，在該狀態期間每幀執行（可為 nullptr）
      * @return  true  註冊成功
-     * @return  false 狀態表已滿（STATECOUNT 個）
+     * @return  false 狀態表已滿
      *
      * @note    狀態 ID 由內部自動分配，等於其在 stateForm 中的索引
      */
@@ -60,15 +60,15 @@ public:
     {
         for (int i = 0; i < STATECOUNT; i++)
         {
-            if (stateForm[i].name == nullptr)       // 找到空位
+            if (stateForm[i].name == nullptr) // 找到空位
             {
-                stateForm[i].id     = i;
-                stateForm[i].name   = name;
+                stateForm[i].id = i;
+                stateForm[i].name = name;
                 stateForm[i].handle = func;
                 return true;
             }
         }
-        return false;                               // 狀態表已滿
+        return false; // 狀態表已滿
     }
 
     /**
@@ -87,7 +87,7 @@ public:
         {
             if (stateForm[i].name && !strcmp(stateForm[i].name, name))
             {
-                stateForm[i].name   = nullptr;
+                stateForm[i].name = nullptr;
                 stateForm[i].handle = nullptr;
                 return true;
             }
@@ -104,7 +104,7 @@ public:
      *
      * @param   from  來源狀態名稱
      * @param   to    目標狀態名稱
-     * @param   func  守衛函數（guard）：當 FSM 處於 from 狀態且此函數返回 true 時觸發轉移
+     * @param   func  原因函數（reason）：當 FSM 處於 from 狀態且此函數返回 true 時觸發轉移
      *                傳 nullptr 表示無條件轉移（每幀皆觸發）
      * @return  true  註冊成功
      * @return  false 來源或目標狀態不存在，或轉移表已滿
@@ -122,17 +122,16 @@ public:
             if (stateForm[i].name && !strcmp(stateForm[i].name, from))
                 fromId = i;
             if (stateForm[i].name && !strcmp(stateForm[i].name, to))
-                toId   = i;
+                toId = i;
         }
 
         if (fromId == 0xFF || toId == 0xFF)
-            return false;                           // 狀態不存在
+            return false; // 狀態不存在
 
         stateTransForm[transCount] = {fromId, toId, func};
         transCount++;
         return true;
     }
-
 
     /**
      * @brief   啟動狀態機，設定初始狀態
@@ -149,15 +148,15 @@ public:
         {
             if (stateForm[i].name && !strcmp(stateForm[i].name, startName))
             {
-                currentID = i;                      // 找到，設定初始狀態
+                currentID = i; // 找到，設定初始狀態
                 return;
             }
         }
-        currentID = 0xff;                           // 未找到，保持未啟動
+        currentID = 0xff; // 未找到，保持未啟動
     }
 
     /**
-     * @brief   驅動狀態機（每幀呼叫一次）
+     * @brief   狀態機更新
      *
      * 執行順序：
      *   1. 若未啟動（currentID == 0xff），直接返回
@@ -165,20 +164,18 @@ public:
      *   3. 若找到，切換到目標狀態（一次最多跳一條規則）
      *   4. 執行當前狀態的事件回調（handle）
      *
-     * @note    應放在主迴圈或 RTOS 任務中反覆呼叫
-     *          守衛函數應輕量且非阻塞（僅檢查旗標/信號量/IO）
+     * @note    應放在主循環或 RTOS 任務中反覆呼叫
+     *          原因函數應輕量且非阻塞（檢測信號量變化）
      */
     void stateUpdate()
     {
         if (currentID == 0xff)
-            return;                                 // 未啟動，不執行
+            return; // 未啟動，不執行
 
         // 掃描轉移表，檢查是否有符合條件的轉移
         for (int i = 0; i < transCount; i++)
         {
-            if (stateTransForm[i].fromID == currentID
-                && stateTransForm[i].reason
-                && stateTransForm[i].reason())
+            if (stateTransForm[i].fromID == currentID && stateTransForm[i].reason && stateTransForm[i].reason())
             {
                 currentID = stateTransForm[i].toID; // 執行轉移
                 break;                              // 一幀最多觸發一次轉移
